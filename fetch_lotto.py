@@ -1,57 +1,72 @@
 import json
 import urllib.request
-import xml.etree.ElementTree as ET
-import re
+from datetime import datetime
 
-RSS_URL = "https://www.lotto.de/api/feed/rss/6aus49"
+API_URL = "https://services.lotto-hessen.de/spielinformationen/gewinnzahlen/lotto"
 
-def get_draws():
-    req = urllib.request.Request(RSS_URL, headers={'User-Agent': 'Mozilla/5.0'})
-    html = urllib.request.urlopen(req).read()
-    root = ET.fromstring(html)
+def fetch_data():
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+    req = urllib.request.Request(API_URL, headers=headers)
+    
+    with urllib.request.urlopen(req) as response:
+        content = response.read().decode('utf-8')
+        return json.loads(content)
 
-    wednesday = []
-    saturday = []
+def main():
+    try:
+        raw_data = fetch_data()
+    except Exception as e:
+        print(f"Fehler beim Laden der API: {e}")
+        return
 
-    for item in root.findall('./channel/item'):
-        title = item.find('title').text or ""
-        desc = item.find('description').text or ""
+    # Lade existierende Daten, um bis zu 3 Ziehungen zu behalten
+    try:
+        with open("lotto.json", "r", encoding="utf-8") as f:
+            existing_data = json.load(f)
+    except Exception:
+        existing_data = {"wednesday": [], "saturday": []}
 
-        # Datum extrahieren
-        date_match = re.search(r'\b(\d{1,2}\.\d{1,2}\.\d{2,4})\b', title + " " + desc)
-        date_str = date_match.group(1) if date_match else ""
+    wednesday = existing_data.get("wednesday", [])
+    saturday = existing_data.get("saturday", [])
 
-        # 6 Gewinnzahlen (1-49) suchen
-        numbers = []
-        for n in re.findall(r'\b\d{1,2}\b', desc):
-            val = int(n)
-            if 1 <= val <= 49 and val not in numbers:
-                numbers.append(val)
-            if len(numbers) == 6:
-                break
+    # Die API liefert unter anderem: {"Datum":"...", "Ziehung":"Mittwoch", "Superzahl":..., "Zahl":[...]}
+    # Oder ein verschachteltes Array
+    items = raw_data if isinstance(raw_data, list) else [raw_data]
 
-        # Superzahl (0-9) suchen
-        super_match = re.search(r'Superzahl[:\s]+(\d)', desc)
-        super_num = int(super_match.group(1)) if super_match else 0
+    for item in items:
+        # Prüfe, ob die erwarteten Felder existieren
+        date_str = item.get("Datum") or item.get("date") or ""
+        numbers = item.get("Zahl") or item.get("numbers") or []
+        super_num = item.get("Superzahl") if "Superzahl" in item else item.get("superNumber", 0)
+        draw_type = item.get("Ziehung") or item.get("day") or ""
 
-        if len(numbers) == 6 and date_str:
-            draw_data = {
+        if numbers and len(numbers) == 6:
+            draw_entry = {
                 "date": date_str,
-                "numbers": sorted(numbers),
-                "superNumber": super_num
+                "numbers": sorted([int(x) for x in numbers]),
+                "superNumber": int(super_num)
             }
-            if "mittwoch" in title.lower() and len(wednesday) < 3:
-                wednesday.append(draw_data)
-            elif "samstag" in title.lower() and len(saturday) < 3:
-                saturday.append(draw_data)
 
-    return {"wednesday": wednesday, "saturday": saturday}
+            if "mittwoch" in draw_type.lower():
+                if not any(d.get("date") == date_str for d in wednesday):
+                    wednesday.insert(0, draw_entry)
+            elif "samstag" in draw_type.lower():
+                if not any(d.get("date") == date_str for d in saturday):
+                    saturday.insert(0, draw_entry)
+
+    # Jeweils auf maximal 3 Ziehungen begrenzen
+    data_to_save = {
+        "wednesday": wednesday[:3],
+        "saturday": saturday[:3]
+    }
+
+    with open("lotto.json", "w", encoding="utf-8") as f:
+        json.dump(data_to_save, f, indent=2, ensure_ascii=False)
+
+    print("lotto.json erfolgreich geschrieben:")
+    print(json.dumps(data_to_save, indent=2, ensure_ascii=False))
 
 if __name__ == "__main__":
-    data = get_draws()
-    if data["wednesday"] or data["saturday"]:
-        with open("lotto.json", "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-        print("lotto.json erfolgreich aktualisiert!")
-    else:
-        print("Keine neuen Daten gefunden.")
+    main()
