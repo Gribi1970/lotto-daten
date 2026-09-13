@@ -1,17 +1,36 @@
 {
-  "wednesday": [],
+  "wednesday": [
+    {
+      "date": "09.09.2026",
+      "numbers": [7, 24, 28, 30, 39, 41],
+      "superNumber": 5
+    },
+    {
+      "date": "02.09.2026",
+      "numbers": [8, 19, 23, 32, 44, 45],
+      "superNumber": 8
+    },
+    {
+      "date": "26.08.2026",
+      "numbers": [6, 15, 30, 33, 42, 49],
+      "superNumber": 1
+    }
+  ],
   "saturday": [
     {
       "date": "12.09.2026",
-      "numbers": [
-        16,
-        20,
-        25,
-        33,
-        39,
-        45
-      ],
+      "numbers": [16, 20, 25, 33, 39, 45],
       "superNumber": 0
+    },
+    {
+      "date": "05.09.2026",
+      "numbers": [6, 11, 28, 31, 37, 47],
+      "superNumber": 5
+    },
+    {
+      "date": "29.08.2026",
+      "numbers": [9, 18, 28, 39, 41, 48],
+      "superNumber": 6
     }
   ]
 }
