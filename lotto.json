@@ -1,6 +1,18 @@
 {
   "wednesday": [
     {
+      "date": "14.10.2026",
+      "numbers": [
+        4,
+        13,
+        16,
+        33,
+        36,
+        39
+      ],
+      "superNumber": 9
+    },
+    {
       "date": "07.10.2026",
       "numbers": [
         12,
@@ -23,18 +35,6 @@
         44
       ],
       "superNumber": 9
-    },
-    {
-      "date": "23.09.2026",
-      "numbers": [
-        3,
-        14,
-        19,
-        24,
-        39,
-        41
-      ],
-      "superNumber": 3
     }
   ],
   "saturday": [
